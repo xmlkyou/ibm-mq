@@ -1,0 +1,32 @@
+7.5版本后，禁止管理员用户访问队列管理器，会返回2035的错误
+
+在默认情况下，创建队列管理器会产生下列三条通道认证记录：$ runmqsc QmgrName
+DISPLAY CHLAUTH(*)
+
+
+1. 关闭认证（不建议，关闭后不会验证密码）
+runmqsc qmname
+ALTER QMGR CHLAUTH(DISABLED)
+display qmgr chlauth
+
+2. runmqsc QmgrName
+SET CHLAUTH(*) TYPE(BLOCKUSER) USERLIST('nobody','*MQADMIN')
+第二条记录对管理员账户开放了SYSTEM.ADMIN通道的访问，只拦截“nobody”用户。这里，MQ假设其它的通道认证记录或者用户安全出口可以完成对管理员账户的认证。
+
+SET CHLAUTH(SYSTEM.ADMIN.*) TYPE(BLOCKUSER) USERLIST('nobody')，同上面一条记录
+
+SET CHLAUTH(自己定义的通道名称) TYPE(ADDRESSMAP) ADDRESS(*) USERSRC(CHANNEL)SET CHLAUTH(自己定义的通道名称) TYPE(BLOCKUSER) USERLIST('nobody')
+
+3. 只允许管理员账户从特定主机连接
+第一条拦截“nobody”用户。
+SET CHLAUTH(SYSTEM.ADMIN.SVRCONN) TYPE(BLOCKUSER) USERLIST('nobody')
+
+第二条删除所有对SYSTEM.ADMIN.SVRCONN通道的访问。
+SET CHLAUTH(SYSTEM.ADMIN.SVRCONN) TYPE(ADDRESSMAP) ADDRESS(*) ACTION(REMOVE)
+
+第三条添加一个访问入口
+SET CHLAUTH(SYSTEM.ADMIN.SVRCONN) TYPE(ADDRESSMAP) ADDRESS(9.27.4x.7y) USERSRC(CHANNEL)
+
+
+tips:  删除添加阻塞用户
+SET CHLAUTH(SYSTEM.ADMIN.SVRCONN) TYPE(BLOCKUSER) USERLIST('nobody') ACTION(REMOVE)
